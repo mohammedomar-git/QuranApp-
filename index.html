@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>আল-কুরআন</title>
+  <title>আল-কুরআন ডিজিটাল - স্মার্ট সার্চ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
   
@@ -98,7 +98,7 @@ const surahList = [
     {id:52, n:"আত-তূর", v:49, t:"মক্কী"}, {id:53, n:"আন-নাজম", v:62, t:"মক্কী"}, {id:54, n:"আল-ক্বামার", v:55, t:"মক্কী"},
     {id:55, n:"আর-রাহমান", v:78, t:"মাদানী"}, {id:56, n:"আল-ওয়াক্বিয়া", v:96, t:"মক্কী"}, {id:57, n:"আল-হাদীদ", v:29, t:"মাদানী"},
     {id:58, n:"আল-মুজাদিলাহ", v:22, t:"মাদানী"}, {id:59, n:"আল-হাশর", v:24, t:"মাদানী"}, {id:60, n:"আল-মুমতাহানাহ", v:13, t:"মাদানী"},
-    {id:61, n:"আস-সাফ", v:14, t:"মাদানী"}, {id:62, n:"আল-জুমু'আহ", v:11, t:"মাদানী"}, {id:63, n:"আল-মুনাফিকুন", v:11, t:"মাদানী"},
+    {id:61, n:"আস-সাফ", v:14, t:"মাদানী"}, {id:62, n:"আল-জুমu'আহ", v:11, t:"মাদানী"}, {id:63, n:"আল-মুনাফিকুন", v:11, t:"মাদানী"},
     {id:64, n:"আত-তাগাবুন", v:18, t:"মাদানী"}, {id:65, n:"আত-তালাক্ব", v:12, t:"মাদানী"}, {id:66, n:"আত-তাহরীম", v:12, t:"মাদানী"},
     {id:67, n:"আল-মুলক", v:30, t:"মক্কী"}, {id:68, n:"আল-ক্বলাম", v:52, t:"মক্কী"}, {id:69, n:"আল-হাক্বক্বাহ", v:52, t:"মক্কী"},
     {id:70, n:"আল-মা'আরিজ", v:44, t:"মক্কী"}, {id:71, n:"নূহ", v:28, t:"মক্কী"}, {id:72, n:"আল-জ্বিন", v:28, t:"মক্কী"},
@@ -109,7 +109,7 @@ const surahList = [
     {id:85, n:"আল-বুরূজ", v:22, t:"মক্কী"}, {id:86, n:"আত-তারিক্ব", v:17, t:"মক্কী"}, {id:87, n:"আল-আ'লা", v:19, t:"মক্কী"},
     {id:88, n:"আল-গাশিয়াহ", v:26, t:"মক্কী"}, {id:89, n:"আল-ফজর", v:30, t:"মক্কী"}, {id:90, n:"আল-বালাদ", v:20, t:"মক্কী"},
     {id:91, n:"আশ-শামস", v:15, t:"মক্কী"}, {id:92, n:"আল-লাইল", v:21, t:"মক্কী"}, {id:93, n:"আদ-দুহা", v:11, t:"মক্কী"},
-    {id:94, n:"আশ-শারহ", v:8, t:"মক্কী"}, {id:95, n:"আত-তীন", v:8, t:"মক্কী"}, {id:96, n:"আল-আলাক্ব", v:19, t:"মক্কী"},
+    {id:94, n:"আশ-শারহ", v:8, t:"mokkî"}, {id:95, n:"আত-তীন", v:8, t:"মক্কী"}, {id:96, n:"আল-আলাক্ব", v:19, t:"মক্কী"},
     {id:97, n:"আল-ক্বদর", v:5, t:"মক্কী"}, {id:98, n:"আল-বাইয়্যিনাহ", v:8, t:"মাদানী"}, {id:99, n:"আয-যালযালাহ", v:8, t:"মাদানী"},
     {id:100, n:"আল-আদিয়াত", v:11, t:"মক্কী"}, {id:101, n:"আল-ক্বারিয়াহ", v:11, t:"মক্কী"}, {id:102, n:"আত-তাকাসুর", v:8, t:"মক্কী"},
     {id:103, n:"আল-আসর", v:3, t:"মক্কী"}, {id:104, n:"আল-হুমাযাহ", v:9, t:"মক্কী"}, {id:105, n:"আল-ফীল", v:5, t:"মক্কী"},
@@ -120,6 +120,7 @@ const surahList = [
 
 let currentFontSize = 28;
 let currentSurahVerses = 0;
+let currentPlayingAudio = null; // বর্তমান অডিও ট্র্যাক ট্র্যাক করার জন্য
 
 function bnNum(n) { return n.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]); }
 
@@ -140,25 +141,18 @@ function initHome(list = surahList, searchMatches = null) {
     }).join('');
 }
 
-// অ্যাডভান্সড বাংলা অনুবাদ সার্চ
 async function searchQuran() {
     const query = document.getElementById('searchInput').value.trim();
     if(!query) { initHome(surahList); return; }
-
     document.getElementById('search-loading').classList.remove('hidden');
     document.getElementById('surah-grid').innerHTML = '';
-
     try {
-        // আল-কুরআন ক্লাউড API এর মাধ্যমে অনুবাদে শব্দ খোঁজা
         const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/bn.bengali`);
         const data = await res.json();
-        
         if(data.code === 200 && data.data.count > 0) {
             const matches = data.data.matches;
-            // রেজাল্ট থেকে ইউনিক সূরা আইডি বের করা
             const uniqueSurahIds = [...new Set(matches.map(m => m.surah.number))];
             const filteredSurahs = surahList.filter(s => uniqueSurahIds.includes(s.id));
-            
             initHome(filteredSurahs, matches);
         } else {
             document.getElementById('surah-grid').innerHTML = `<p class="col-span-full text-center py-10 text-slate-500 font-bold">দুঃখিত, '${query}' শব্দটি পাওয়া যায়নি।</p>`;
@@ -183,10 +177,7 @@ async function loadSurah(id, name, targetAyah = null) {
     try {
         const res = await fetch(`https://api.alquran.cloud/v1/surah/${id}/editions/quran-uthmani,bn.bengali,ar.alafasy`);
         const d = await res.json();
-        
         renderAyahs(d.data, id);
-        
-        // যদি সার্চ থেকে আসা হয়, সরাসরি ওই আয়াতে স্ক্রল করো
         if(targetAyah) {
             setTimeout(() => jumpToAyah(targetAyah - 1), 500);
         } else {
@@ -202,19 +193,15 @@ function renderAyahs(data, surahId) {
     const bn = data[1].ayahs;
     const au = data[2].ayahs;
     let html = '';
-
     if (surahId !== 1 && surahId !== 9) {
         html += `<div class="bg-white dark:bg-slate-800 p-8 rounded-3xl text-center text-3xl text-emerald-600 arabic mb-6 shadow-sm border border-emerald-100 dark:border-emerald-900/30">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
     }
-
     ar.forEach((ayah, i) => {
         let text = ayah.text;
-        // বিসমিল্লাহ রিমুভার
         if (i === 0 && surahId !== 1 && surahId !== 9) {
             const words = text.split(' ');
             if (words.length > 4) text = words.slice(4).join(' ');
         }
-
         html += `
             <div id="ayah-${i}" class="ayah-card bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
                 <div class="flex justify-between items-center mb-6">
@@ -246,14 +233,21 @@ function jumpToAyah(index) {
         const offset = 160;
         const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top: pos, behavior: 'smooth' });
-        
-        // হাইলাইট ইফেক্ট
         el.classList.add('playing');
         setTimeout(() => el.classList.remove('playing'), 2000);
     }
 }
 
 function onPlay(i) {
+    const audio = document.getElementById(`audio-${i}`);
+    
+    // ১. যদি অন্য কোনো অডিও বাজে তবে তা বন্ধ করে নতুনটা শুরু হবে
+    if (currentPlayingAudio && currentPlayingAudio !== audio) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio.currentTime = 0;
+    }
+    currentPlayingAudio = audio;
+
     document.querySelectorAll('.ayah-card').forEach(c => c.classList.remove('playing'));
     document.getElementById(`ayah-${i}`).classList.add('playing');
 }
@@ -276,6 +270,13 @@ function toggleDarkMode() {
 }
 
 function goHome() {
+    // ২. হোমে ফিরে গেলে অডিও বন্ধ করা
+    if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+        currentPlayingAudio.currentTime = 0;
+        currentPlayingAudio = null;
+    }
+    
     document.getElementById('home-view').classList.remove('hidden');
     document.getElementById('reading-view').classList.add('hidden');
     document.getElementById('back-btn').classList.add('hidden');
