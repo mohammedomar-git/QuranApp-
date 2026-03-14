@@ -1,215 +1,288 @@
-<!DOCTYPE html>
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>আল-কোরআন রিডার</title>
-    <style>
-        /* বেসিক স্টাইল এবং রিসেট */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'SolaimanLipi', sans-serif; background: #f4f4f4; color: #333; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-        
-        /* হেডার ডিজাইন */
-        header { background: #009688; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        header h1 { font-size: 18px; margin-left: 10px; }
-        
-        /* সার্চ বার */
-        .search-box { padding: 10px; background: white; border-bottom: 1px solid #ddd; }
-        .search-box input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-
-        /* মেইন কন্টেন্ট এরিয়া */
-        #content-area { flex: 1; overflow-y: auto; padding: 10px; position: relative; }
-
-        /* সূরা লিস্ট ডিজাইন */
-        .surah-item { background: white; padding: 15px; margin-bottom: 8px; border-radius: 8px; border-left: 5px solid #009688; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
-        .surah-item:active { background: #e0f2f1; }
-        .surah-name-en { font-weight: bold; font-size: 16px; }
-        .surah-name-ar { font-family: serif; font-size: 20px; color: #00796b; }
-        .surah-info { font-size: 12px; color: #666; }
-
-        /* আয়াত ভিউ ডিজাইন */
-        .ayah-container { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .ayah-ar { text-align: right; font-family: 'Amiri', serif; font-size: 26px; color: #222; margin-bottom: 10px; line-height: 1.8; }
-        .ayah-bn { text-align: left; font-size: 16px; color: #555; line-height: 1.5; }
-        .audio-player { width: 100%; margin-top: 10px; }
-        
-        /* ফ্লোটিং কন্ট্রোল (ফন্ট সাইজ) */
-        .controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; }
-        .btn { background: #009688; color: white; border: none; padding: 12px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer; font-size: 18px; }
-        
-        /* ব্যাক বাটন */
-        .back-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; margin-right: 10px; display: none; }
-
-        /* লোডার */
-        .loader { text-align: center; padding: 20px; display: none; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>আল-কুরআন</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
+  
+  <style>
+    :root { --primary: #059669; }
+    body { font-family: 'Noto Sans Bengali', sans-serif; transition: all 0.3s; }
+    .arabic { font-family: 'Amiri', serif; line-height: 2.5; text-align: right; direction: rtl; }
+    .dark-mode { background-color: #0f172a !important; color: #f1f5f9; }
+    .dark-mode .bg-white { background-color: #1e293b !important; color: #f1f5f9; border-color: #334155 !important; }
+    .dark-mode .text-slate-800, .dark-mode .text-slate-600 { color: #cbd5e1 !important; }
+    .dark-mode audio { filter: invert(100%) hue-rotate(180deg) brightness(1.5); }
+    .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .ayah-card.playing { border-left: 4px solid var(--primary); background-color: rgba(5, 150, 105, 0.08); }
+    .sticky-header { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+  </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900">
 
-<header>
-    <div style="display:flex; align-items:center;">
-        <button class="back-btn" id="backBtn" onclick="showSurahList()">&#8592;</button>
-        <h1 id="appTitle">আল-কোরআন</h1>
+<div id="app">
+  <header class="bg-emerald-800 text-white p-4 shadow-xl sticky-header">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
+        <span class="text-2xl">📖</span>
+        <h1 class="text-xl font-bold">আল-কুরআন</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="toggleDarkMode()" class="p-2 hover:bg-emerald-900 rounded-full transition">🌙/☀️</button>
+        <button id="back-btn" class="hidden bg-emerald-600 hover:bg-emerald-500 px-5 py-1.5 rounded-full text-sm font-bold transition-all" onclick="goHome()">ফিরে যান</button>
+      </div>
     </div>
-    <button onclick="goToLastRead()" style="background:none; border:none; color:white; font-size:12px; border:1px solid white; padding:5px; border-radius:4px;">Last Read</button>
-</header>
+  </header>
 
-<div class="search-box" id="searchBox">
-    <input type="text" id="searchInput" placeholder="সূরা খুঁজুন (ইংরেজিতে)..." onkeyup="filterSurahs()">
-</div>
+  <main class="container mx-auto p-4 max-w-5xl">
+    
+    <div id="home-view">
+      <div class="bg-emerald-700 text-white p-8 rounded-3xl mb-8 shadow-lg mt-4 bg-[url('https://www.transparenttextures.com/patterns/islamic-exercise.png')]">
+        <h2 class="text-2xl font-bold mb-2">স্মার্ট কুরআন সার্চ</h2>
+        <p class="opacity-90 mb-6 text-sm">যেকোনো বাংলা শব্দ (যেমন: 'মৌমাছি') লিখে সরাসরি আয়াত খুঁজে বের করুন</p>
+        <div class="relative max-w-2xl">
+            <input type="text" id="searchInput" placeholder="খুঁজুন..." 
+            class="w-full p-4 pl-6 rounded-2xl text-slate-800 outline-none shadow-2xl focus:ring-4 focus:ring-emerald-400 transition-all">
+            <button onclick="searchQuran()" class="absolute right-3 top-2 bg-emerald-600 p-2 px-6 rounded-xl font-bold hover:bg-emerald-500 transition">খুঁজুন</button>
+        </div>
+      </div>
 
-<div id="content-area">
-    <div class="loader" id="loader">লোড হচ্ছে...</div>
-    <div id="surahList"></div>
-    <div id="ayahView" style="display: none;"></div>
-</div>
+      <div id="search-loading" class="hidden flex justify-center py-10"><div class="loader"></div></div>
+      <div id="surah-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
 
-<div class="controls" id="controls" style="display:none;">
-    <button class="btn" onclick="changeFontSize(1)">+</button>
-    <button class="btn" onclick="changeFontSize(-1)">-</button>
+    <div id="reading-view" class="hidden">
+      <div class="flex flex-wrap justify-between items-center mb-6 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 gap-4 sticky top-[72px] z-40">
+        <h2 id="surah-info-title" class="font-bold text-emerald-700 dark:text-emerald-400"></h2>
+        
+        <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-700 rounded-xl px-2">
+                <input type="number" id="jumpInput" placeholder="আয়াত নং" class="w-16 bg-transparent p-2 text-sm outline-none font-bold">
+                <button onclick="handleJump()" class="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-lg font-bold">জাম্প</button>
+            </div>
+
+            <div class="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-1">
+                <button onclick="changeFontSize(-2)" class="px-3 py-1 font-bold">-</button>
+                <button onclick="changeFontSize(2)" class="px-3 py-1 font-bold">+</button>
+            </div>
+        </div>
+      </div>
+
+      <div id="surah-content" class="space-y-6 pb-24"></div>
+    </div>
+  </main>
 </div>
 
 <script>
-    let allSurahs = [];
-    let currentFontSize = 26;
-    
-    // ১. অ্যাপ লোড হলে সূরা লিস্ট আনবে
-    window.onload = async function() {
-        document.getElementById('loader').style.display = 'block';
-        try {
-            // API থেকে সূরা লিস্ট আনা (Al Quran Cloud API)
-            const response = await fetch('https://api.alquran.cloud/v1/surah');
-            const data = await response.json();
-            allSurahs = data.data;
-            renderSurahList(allSurahs);
-            
-            // লাস্ট রিড চেক
-            const lastSurah = localStorage.getItem('lastReadSurah');
-            if(lastSurah) {
-                // ইউজার চাইলে নোটিফিকেশন দেখাতে পারেন
-            }
-        } catch (error) {
-            alert("ইন্টারনেট কানেকশন চেক করুন!");
-        }
-        document.getElementById('loader').style.display = 'none';
-    };
+const surahList = [
+    {id:1, n:"আল-ফাতিহা", v:7, t:"মক্কী"}, {id:2, n:"আল-বাকারা", v:286, t:"মাদানী"}, {id:3, n:"আল-ইমরান", v:200, t:"মাদানী"},
+    {id:4, n:"আন-নিসা", v:176, t:"মাদানী"}, {id:5, n:"আল-মায়িদাহ", v:120, t:"মাদানী"}, {id:6, n:"আল-আন'আম", v:165, t:"মক্কী"},
+    {id:7, n:"আল-আ'রাফ", v:206, t:"মক্কী"}, {id:8, n:"আল-আনফাল", v:75, t:"মাদানী"}, {id:9, n:"আত-তাওবাহ", v:129, t:"মাদানী"},
+    {id:10, n:"ইউনুস", v:109, t:"মক্কী"}, {id:11, n:"হুদ", v:123, t:"মক্কী"}, {id:12, n:"ইউসুফ", v:111, t:"মক্কী"},
+    {id:13, n:"আর-রা'দ", v:43, t:"মাদানী"}, {id:14, n:"ইবরাহীম", v:52, t:"মক্কী"}, {id:15, n:"আল-হিজর", v:99, t:"মক্কী"},
+    {id:16, n:"আন-নাহল", v:128, t:"মক্কী"}, {id:17, n:"আল-ইসরা", v:111, t:"মক্কী"}, {id:18, n:"আল-কাহফ", v:110, t:"মক্কী"},
+    {id:19, n:"মারইয়াম", v:98, t:"মক্কী"}, {id:20, n:"তহা", v:135, t:"মক্কী"}, {id:21, n:"আল-আম্বিয়া", v:112, t:"মক্কী"},
+    {id:22, n:"আল-হাজ্জ", v:78, t:"মাদানী"}, {id:23, n:"আল-মু'মিনুন", v:118, t:"মক্কী"}, {id:24, n:"আন-নূর", v:64, t:"মাদানী"},
+    {id:25, n:"আল-ফুরকান", v:77, t:"মক্কী"}, {id:26, n:"আশ-শু'আরা", v:227, t:"মক্কী"}, {id:27, n:"আন-নামল", v:93, t:"মক্কী"},
+    {id:28, n:"আল-কাসাস", v:88, t:"মক্কী"}, {id:29, n:"আল-আনকাবুত", v:69, t:"মক্কী"}, {id:30, n:"আর-রূম", v:60, t:"মক্কী"},
+    {id:31, n:"লুকমান", v:34, t:"মক্কী"}, {id:32, n:"আস-সাজদাহ", v:30, t:"মক্কী"}, {id:33, n:"আল-আহজাব", v:73, t:"মাদানী"},
+    {id:34, n:"সাবা", v:54, t:"মক্কী"}, {id:35, n:"ফাতির", v:45, t:"মক্কী"}, {id:36, n:"ইয়াসীন", v:83, t:"মক্কী"},
+    {id:37, n:"আস-সাফফাত", v:182, t:"মক্কী"}, {id:38, n:"সোয়াদ", v:88, t:"মক্কী"}, {id:39, n:"আয-যুমার", v:75, t:"মক্কী"},
+    {id:40, n:"গাফির", v:85, t:"মক্কী"}, {id:41, n:"ফুসসিলাত", v:54, t:"মক্কী"}, {id:42, n:"আশ-শূরা", v:53, t:"মক্কী"},
+    {id:43, n:"আয-যুখরুফ", v:89, t:"মক্কী"}, {id:44, n:"আদ-দুখান", v:59, t:"মক্কী"}, {id:45, n:"আল-জাসিয়াহ", v:37, t:"মক্কী"},
+    {id:46, n:"আল-আহকাফ", v:35, t:"মক্কী"}, {id:47, n:"মুহাম্মদ", v:38, t:"মাদানী"}, {id:48, n:"আল-ফাতহ", v:29, t:"মাদানী"},
+    {id:49, n:"আল-হুজুরাত", v:18, t:"মাদানী"}, {id:50, n:"ক্বাফ", v:45, t:"মক্কী"}, {id:51, n:"আয-যারিয়াত", v:60, t:"মক্কী"},
+    {id:52, n:"আত-তূর", v:49, t:"মক্কী"}, {id:53, n:"আন-নাজম", v:62, t:"মক্কী"}, {id:54, n:"আল-ক্বামার", v:55, t:"মক্কী"},
+    {id:55, n:"আর-রাহমান", v:78, t:"মাদানী"}, {id:56, n:"আল-ওয়াক্বিয়া", v:96, t:"মক্কী"}, {id:57, n:"আল-হাদীদ", v:29, t:"মাদানী"},
+    {id:58, n:"আল-মুজাদিলাহ", v:22, t:"মাদানী"}, {id:59, n:"আল-হাশর", v:24, t:"মাদানী"}, {id:60, n:"আল-মুমতাহানাহ", v:13, t:"মাদানী"},
+    {id:61, n:"আস-সাফ", v:14, t:"মাদানী"}, {id:62, n:"আল-জুমু'আহ", v:11, t:"মাদানী"}, {id:63, n:"আল-মুনাফিকুন", v:11, t:"মাদানী"},
+    {id:64, n:"আত-তাগাবুন", v:18, t:"মাদানী"}, {id:65, n:"আত-তালাক্ব", v:12, t:"মাদানী"}, {id:66, n:"আত-তাহরীম", v:12, t:"মাদানী"},
+    {id:67, n:"আল-মুলক", v:30, t:"মক্কী"}, {id:68, n:"আল-ক্বলাম", v:52, t:"মক্কী"}, {id:69, n:"আল-হাক্বক্বাহ", v:52, t:"মক্কী"},
+    {id:70, n:"আল-মা'আরিজ", v:44, t:"মক্কী"}, {id:71, n:"নূহ", v:28, t:"মক্কী"}, {id:72, n:"আল-জ্বিন", v:28, t:"মক্কী"},
+    {id:73, n:"আল-মুয্যামমিল", v:20, t:"মক্কী"}, {id:74, n:"আল-মুদ্দাসসির", v:56, t:"মক্কী"}, {id:75, n:"আল-ক্বিয়ামাহ", v:40, t:"মক্কী"},
+    {id:76, n:"আল-ইনসান", v:31, t:"মাদানী"}, {id:77, n:"আল-মুরসালাত", v:50, t:"মক্কী"}, {id:78, n:"আন-নাবা", v:40, t:"মক্কী"},
+    {id:79, n:"আন-নাযি'আত", v:46, t:"মক্কী"}, {id:80, n:"আবাসা", v:42, t:"মক্কী"}, {id:81, n:"আত-তাকবীর", v:29, t:"মক্কী"},
+    {id:82, n:"আল-ইনফিতার", v:19, t:"মক্কী"}, {id:83, n:"আল-মুতাফফিফীন", v:36, t:"মক্কী"}, {id:84, n:"আল-ইনশিক্বাক্ব", v:25, t:"মক্কী"},
+    {id:85, n:"আল-বুরূজ", v:22, t:"মক্কী"}, {id:86, n:"আত-তারিক্ব", v:17, t:"মক্কী"}, {id:87, n:"আল-আ'লা", v:19, t:"মক্কী"},
+    {id:88, n:"আল-গাশিয়াহ", v:26, t:"মক্কী"}, {id:89, n:"আল-ফজর", v:30, t:"মক্কী"}, {id:90, n:"আল-বালাদ", v:20, t:"মক্কী"},
+    {id:91, n:"আশ-শামস", v:15, t:"মক্কী"}, {id:92, n:"আল-লাইল", v:21, t:"মক্কী"}, {id:93, n:"আদ-দুহা", v:11, t:"মক্কী"},
+    {id:94, n:"আশ-শারহ", v:8, t:"মক্কী"}, {id:95, n:"আত-তীন", v:8, t:"মক্কী"}, {id:96, n:"আল-আলাক্ব", v:19, t:"মক্কী"},
+    {id:97, n:"আল-ক্বদর", v:5, t:"মক্কী"}, {id:98, n:"আল-বাইয়্যিনাহ", v:8, t:"মাদানী"}, {id:99, n:"আয-যালযালাহ", v:8, t:"মাদানী"},
+    {id:100, n:"আল-আদিয়াত", v:11, t:"মক্কী"}, {id:101, n:"আল-ক্বারিয়াহ", v:11, t:"মক্কী"}, {id:102, n:"আত-তাকাসুর", v:8, t:"মক্কী"},
+    {id:103, n:"আল-আসর", v:3, t:"মক্কী"}, {id:104, n:"আল-হুমাযাহ", v:9, t:"মক্কী"}, {id:105, n:"আল-ফীল", v:5, t:"মক্কী"},
+    {id:106, n:"কুরাইশ", v:4, t:"মক্কী"}, {id:107, n:"আল-মাউন", v:7, t:"মক্কী"}, {id:108, n:"আল-কাওসার", v:3, t:"মক্কী"},
+    {id:109, n:"আল-কাফিরুন", v:6, t:"মক্কী"}, {id:110, n:"আন-নাসর", v:3, t:"মাদানী"}, {id:111, n:"আল-লাহাব", v:5, t:"মক্কী"},
+    {id:112, n:"আল-ইখলাস", v:4, t:"মক্কী"}, {id:113, n:"আল-ফালাক্ব", v:5, t:"মক্কী"}, {id:114, n:"আন-নাস", v:6, t:"মক্কী"}
+];
 
-    // ২. সূরা লিস্ট দেখানো
-    function renderSurahList(surahs) {
-        const listContainer = document.getElementById('surahList');
-        listContainer.innerHTML = '';
-        surahs.forEach(surah => {
-            const div = document.createElement('div');
-            div.className = 'surah-item';
-            div.onclick = () => loadSurahDetail(surah.number, surah.englishName, surah.name);
-            div.innerHTML = `
-                <div>
-                    <div class="surah-name-en">${surah.number}. ${surah.englishName}</div>
-                    <div class="surah-info">${surah.englishNameTranslation} | আয়াত: ${surah.numberOfAyahs}</div>
+let currentFontSize = 28;
+let currentSurahVerses = 0;
+
+function bnNum(n) { return n.toString().replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]); }
+
+function initHome(list = surahList, searchMatches = null) {
+    const grid = document.getElementById('surah-grid');
+    grid.innerHTML = list.map(s => {
+        const match = searchMatches ? searchMatches.find(m => m.surah.number === s.id) : null;
+        return `
+            <div onclick="loadSurah(${s.id}, '${s.n}', ${match ? match.numberInSurah : null})" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow-xl cursor-pointer transition-all">
+                <div class="flex justify-between mb-3">
+                    <span class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-bold w-8 h-8 flex items-center justify-center rounded-lg text-xs">${bnNum(s.id)}</span>
+                    ${match ? `<span class="bg-orange-100 text-orange-600 text-[10px] px-2 py-1 rounded-full font-bold">আয়াত নং ${bnNum(match.numberInSurah)} তে মিল আছে</span>` : `<span class="text-[10px] text-slate-400 uppercase font-bold">${s.t}</span>`}
                 </div>
-                <div class="surah-name-ar">${surah.name}</div>
-            `;
-            listContainer.appendChild(div);
-        });
-    }
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white">${s.n}</h3>
+                <p class="text-xs text-slate-500 mt-1">আয়াত: ${bnNum(s.v)}</p>
+            </div>
+        `;
+    }).join('');
+}
 
-    // ৩. নির্দিষ্ট সূরা লোড করা (আরবী + বাংলা + অডিও)
-    async function loadSurahDetail(number, enName, arName) {
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('surahList').style.display = 'none';
-        document.getElementById('searchBox').style.display = 'none';
-        document.getElementById('ayahView').style.display = 'block';
-        document.getElementById('backBtn').style.display = 'block';
-        document.getElementById('controls').style.display = 'flex';
-        document.getElementById('appTitle').innerText = enName;
-        document.getElementById('ayahView').innerHTML = ''; // ক্লিয়ার
+// অ্যাডভান্সড বাংলা অনুবাদ সার্চ
+async function searchQuran() {
+    const query = document.getElementById('searchInput').value.trim();
+    if(!query) { initHome(surahList); return; }
 
-        // লাস্ট রিড সেভ করা
-        localStorage.setItem('lastReadSurah', number);
+    document.getElementById('search-loading').classList.remove('hidden');
+    document.getElementById('surah-grid').innerHTML = '';
 
-        try {
-            // একসাথে আরবী টেক্সট, বাংলা অনুবাদ এবং অডিও আনা
-            // নোট: বাংলা অনুবাদের জন্য আমরা 'bn.bengali' এডিশন ব্যবহার করছি
-            const [arabicRes, banglaRes, audioRes] = await Promise.all([
-                fetch(`https://api.alquran.cloud/v1/surah/${number}`),
-                fetch(`https://api.alquran.cloud/v1/surah/${number}/bn.bengali`),
-                fetch(`https://api.alquran.cloud/v1/surah/${number}/ar.alafasy`)
-            ]);
-
-            const arabicData = await arabicRes.json();
-            const banglaData = await banglaRes.json();
-            const audioData = await audioRes.json();
-
-            const ayahs = arabicData.data.ayahs;
-            const bnAyahs = banglaData.data.ayahs;
-            const audioAyahs = audioData.data.ayahs;
-
-            let htmlContent = `<div style="text-align:center; margin-bottom:20px; font-size:24px; color:#009688;">${arName}</div>`;
-
-            ayahs.forEach((ayah, index) => {
-                htmlContent += `
-                    <div class="ayah-container">
-                        <div class="ayah-ar" style="font-size:${currentFontSize}px;">${ayah.text}</div>
-                        <div class="ayah-bn">${bnAyahs[index].text}</div>
-                        <audio controls class="audio-player" preload="none">
-                            <source src="${audioAyahs[index].audio}" type="audio/mpeg">
-                        </audio> 
-                        <small style="color:#999;">আয়াত: ${ayah.numberInSurah}</small>
-                    </div>
-                `;
-            });
-
-            document.getElementById('ayahView').innerHTML = htmlContent;
-
-        } catch (error) {
-            alert("ডাটা লোড করতে সমস্যা হচ্ছে।");
-        }
-        document.getElementById('loader').style.display = 'none';
-    }
-
-    // ৪. ব্যাকে ফিরে আসা
-    function showSurahList() {
-        document.getElementById('surahList').style.display = 'block';
-        document.getElementById('searchBox').style.display = 'block';
-        document.getElementById('ayahView').style.display = 'none';
-        document.getElementById('backBtn').style.display = 'none';
-        document.getElementById('controls').style.display = 'none';
-        document.getElementById('appTitle').innerText = 'আল-কোরআন';
-        document.getElementById('loader').style.display = 'none';
-    }
-
-    // ৫. সার্চ ফিল্টার
-    function filterSurahs() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allSurahs.filter(s => 
-            s.englishName.toLowerCase().includes(query) || 
-            s.number.toString().includes(query)
-        );
-        renderSurahList(filtered);
-    }
-
-    // ৬. ফন্ট সাইজ ছোট বড় করা
-    function changeFontSize(amount) {
-        currentFontSize += amount;
-        const ayahTextElements = document.getElementsByClassName('ayah-ar');
-        for (let el of ayahTextElements) {
-            el.style.fontSize = currentFontSize + 'px';
-        }
-    }
-
-    // ৭. লাস্ট রিড এ যাওয়া
-    function goToLastRead() {
-        const last = localStorage.getItem('lastReadSurah');
-        if (last) {
-            // সেই সূরাটি খুঁজে বের করে ওপেন করা
-            const surah = allSurahs.find(s => s.number == last);
-            if(surah) loadSurahDetail(surah.number, surah.englishName, surah.name);
+    try {
+        // আল-কুরআন ক্লাউড API এর মাধ্যমে অনুবাদে শব্দ খোঁজা
+        const res = await fetch(`https://api.alquran.cloud/v1/search/${query}/all/bn.bengali`);
+        const data = await res.json();
+        
+        if(data.code === 200 && data.data.count > 0) {
+            const matches = data.data.matches;
+            // রেজাল্ট থেকে ইউনিক সূরা আইডি বের করা
+            const uniqueSurahIds = [...new Set(matches.map(m => m.surah.number))];
+            const filteredSurahs = surahList.filter(s => uniqueSurahIds.includes(s.id));
+            
+            initHome(filteredSurahs, matches);
         } else {
-            alert("আপনি এখনো কোনো সূরা পড়েননি।");
+            document.getElementById('surah-grid').innerHTML = `<p class="col-span-full text-center py-10 text-slate-500 font-bold">দুঃখিত, '${query}' শব্দটি পাওয়া যায়নি।</p>`;
         }
+    } catch (e) {
+        alert("সার্চ করার সময় সমস্যা হয়েছে।");
+    } finally {
+        document.getElementById('search-loading').classList.add('hidden');
     }
-</script>
+}
 
+async function loadSurah(id, name, targetAyah = null) {
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('reading-view').classList.remove('hidden');
+    document.getElementById('back-btn').classList.remove('hidden');
+    document.getElementById('surah-content').innerHTML = '<div class="flex justify-center py-20"><div class="loader"></div></div>';
+    
+    const surah = surahList.find(s => s.id === id);
+    currentSurahVerses = surah.v;
+    document.getElementById('surah-info-title').innerText = "সূরা " + name;
+
+    try {
+        const res = await fetch(`https://api.alquran.cloud/v1/surah/${id}/editions/quran-uthmani,bn.bengali,ar.alafasy`);
+        const d = await res.json();
+        
+        renderAyahs(d.data, id);
+        
+        // যদি সার্চ থেকে আসা হয়, সরাসরি ওই আয়াতে স্ক্রল করো
+        if(targetAyah) {
+            setTimeout(() => jumpToAyah(targetAyah - 1), 500);
+        } else {
+            window.scrollTo(0,0);
+        }
+    } catch (e) {
+        goHome();
+    }
+}
+
+function renderAyahs(data, surahId) {
+    const ar = data[0].ayahs;
+    const bn = data[1].ayahs;
+    const au = data[2].ayahs;
+    let html = '';
+
+    if (surahId !== 1 && surahId !== 9) {
+        html += `<div class="bg-white dark:bg-slate-800 p-8 rounded-3xl text-center text-3xl text-emerald-600 arabic mb-6 shadow-sm border border-emerald-100 dark:border-emerald-900/30">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>`;
+    }
+
+    ar.forEach((ayah, i) => {
+        let text = ayah.text;
+        // বিসমিল্লাহ রিমুভার
+        if (i === 0 && surahId !== 1 && surahId !== 9) {
+            const words = text.split(' ');
+            if (words.length > 4) text = words.slice(4).join(' ');
+        }
+
+        html += `
+            <div id="ayah-${i}" class="ayah-card bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="w-8 h-8 flex items-center justify-center bg-emerald-600 text-white rounded-full text-[10px] font-bold shadow-lg">${bnNum(i + 1)}</span>
+                    <audio id="audio-${i}" onplay="onPlay(${i})" onended="playNext(${i})" controls preload="none" class="h-8">
+                        <source src="${au[i].audio}" type="audio/mpeg">
+                    </audio>
+                </div>
+                <p class="arabic mb-6 text-slate-800 dark:text-slate-100" style="font-size: ${currentFontSize}px">${text}</p>
+                <p class="text-slate-600 dark:text-slate-300 text-lg border-l-4 border-emerald-500 pl-5 font-medium">${bn[i].text}</p>
+            </div>
+        `;
+    });
+    document.getElementById('surah-content').innerHTML = html;
+}
+
+function handleJump() {
+    const val = parseInt(document.getElementById('jumpInput').value);
+    if(val > 0 && val <= currentSurahVerses) {
+        jumpToAyah(val - 1);
+    } else {
+        alert("এই সূরায় আয়াত আছে ১ থেকে " + bnNum(currentSurahVerses) + " পর্যন্ত।");
+    }
+}
+
+function jumpToAyah(index) {
+    const el = document.getElementById(`ayah-${index}`);
+    if(el) {
+        const offset = 160;
+        const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top: pos, behavior: 'smooth' });
+        
+        // হাইলাইট ইফেক্ট
+        el.classList.add('playing');
+        setTimeout(() => el.classList.remove('playing'), 2000);
+    }
+}
+
+function onPlay(i) {
+    document.querySelectorAll('.ayah-card').forEach(c => c.classList.remove('playing'));
+    document.getElementById(`ayah-${i}`).classList.add('playing');
+}
+
+function playNext(i) {
+    const next = document.getElementById(`audio-${i+1}`);
+    if(next) {
+        next.play();
+        jumpToAyah(i+1);
+    }
+}
+
+function changeFontSize(d) {
+    currentFontSize = Math.max(20, Math.min(50, currentFontSize + d));
+    document.querySelectorAll('.arabic').forEach(p => p.style.fontSize = currentFontSize + 'px');
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+}
+
+function goHome() {
+    document.getElementById('home-view').classList.remove('hidden');
+    document.getElementById('reading-view').classList.add('hidden');
+    document.getElementById('back-btn').classList.add('hidden');
+    window.scrollTo(0,0);
+}
+
+initHome();
+</script>
 </body>
 </html>
